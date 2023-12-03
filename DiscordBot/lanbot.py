@@ -12,7 +12,7 @@ intents.message_content = True  # Ensure the bot can access the content of messa
 client = discord.Client(intents=intents)
 
 # Initialize the LocalAssistant instance
-assistant = LocalAssistant("ws://localhost:8282", "agent_2")  # Replace with your WebSocket URI and agent name
+assistant = LocalAssistant("ws://localhost:8282", "agent_4")  # Replace with your WebSocket URI and agent name
 
 @client.event
 async def on_ready():
@@ -24,12 +24,20 @@ async def on_message(message):
         return
 
     if client.user is not None and client.user.mentioned_in(message):
-        # When the bot is mentioned, process the message
-        user_message = message.content
-        responses = await assistant.send_and_receive_message(user_message)
+        # Capture the username of the message sender
+        username = message.author.display_name
+
+        # Process the message content, ignoring the mention
+        user_message = message.content.replace(f"@{client.user.name}", "")
+
+        # Send the message to the LocalAssistant
+        responses = await assistant.send_and_receive_message(f"{username} : {user_message}")
+        
         if responses:
             for response in responses:
-                await send_split_messages(message.channel, response)
+                # Format the response to include the username
+                formatted_response = f"{response}"
+                await send_split_messages(message.channel, formatted_response)
         else:
             await message.channel.send("No response received or an error occurred.")
     else:
@@ -43,3 +51,4 @@ async def send_split_messages(channel, message, char_limit=2000):
         await channel.send(chunk)
 
 client.run(bot_token)
+
